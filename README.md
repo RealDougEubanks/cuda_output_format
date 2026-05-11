@@ -48,7 +48,21 @@ throughput. Adding the flag keeps the whole pipeline on the GPU.
 
 ## Install
 
-### Option 1 — Manual install (recommended for a single plugin)
+### Option 1 — Add as a custom Unmanic plugin repository (easiest)
+
+In the Unmanic web UI:
+
+1. **Settings → Plugins → Repos → +** (Add a new repository).
+2. Paste this URL:
+   ```
+   https://raw.githubusercontent.com/RealDougEubanks/cuda_output_format/repo/repo.json
+   ```
+3. **Settings → Plugins** — *CUDA Output Format Injector* will now appear in the list. Click **Install**.
+4. Add it to your library's Plugin Flow (see step 3 of Option 2 below — same workflow).
+
+The `repo` branch is rebuilt automatically by GitHub Actions on every push to `main`, so installs always pull the current published version.
+
+### Option 2 — Manual install
 
 ```bash
 cd /config/.unmanic/userdata/plugins/
@@ -70,7 +84,7 @@ Then in the Unmanic web UI:
    already-assembled command.
 4. Save and run a test job.
 
-### Option 2 — Download a zip
+### Option 3 — Download a zip
 
 Grab the latest source zip from the
 [Releases](https://github.com/RealDougEubanks/cuda_output_format/releases)
