@@ -1,0 +1,114 @@
+# Builds the installable plugin zip and attaches it to a GitHub
+# Release whenever a `v*` tag is pushed.
+#
+# Workflow:
+#   1. Bump `info.json` version + add a `changelog.md` section.
+#   2. Merge to main.
+#   3. `git tag v0.2.0 && git push origin v0.2.0`
+#   4. This workflow creates the release at github.com/.../releases
+#      with `cuda_output_format-0.2.0.zip` as an asset.
+#
+# The publish-repo workflow handles Unmanic-side distribution from
+# the `repo` branch; this one is for users who want a direct zip
+# download or for archiving a versioned artifact.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          fetch-depth: 0
+
+      - name: Read plugin metadata and verify tag
+        id: meta
+        run: |
+          set -euo pipefail
+          PLUGIN_ID=$(python3 -c "import json; print(json.load(open('info.json'))['id'])")
+          VERSION=$(python3 -c "import json; print(json.load(open('info.json'))['version'])")
+          TAG="${GITHUB_REF#refs/tags/}"
+          TAG_VERSION="${TAG#v}"
+          if [ "$TAG_VERSION" != "$VERSION" ]; then
+            echo "::error::Tag $TAG (version $TAG_VERSION) does not match info.json version $VERSION."
+            echo "Bump info.json before tagging, or retag to match."
+            exit 1
+          fi
+          echo "plugin_id=${PLUGIN_ID}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}"    >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}"            >> "$GITHUB_OUTPUT"
+
+      - name: Build plugin zip
+        env:
+          PLUGIN_ID: ${{ steps.meta.outputs.plugin_id }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          ZIP_FILES=(plugin.py info.json description.md changelog.md requirements.txt LICENSE README.md icon.png)
+          ZIP_DIRS=(lib)
+          STAGE=$(mktemp -d)
+          for f in "${ZIP_FILES[@]}"; do
+            [ -f "$f" ] && cp "$f" "$STAGE/$f"
+          done
+          for d in "${ZIP_DIRS[@]}"; do
+            [ -d "$d" ] && cp -R "$d" "$STAGE/$d"
+          done
+          find "$STAGE" -type d -name '__pycache__' -prune -exec rm -rf {} +
+          (cd "$STAGE" && zip -qr "${PLUGIN_ID}-${VERSION}.zip" .)
+          mv "$STAGE/${PLUGIN_ID}-${VERSION}.zip" .
+          ls -la "${PLUGIN_ID}-${VERSION}.zip"
+
+      - name: Extract release notes from changelog
+        id: notes
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Pull the bullets for the matching `**X.Y.Z**` section out of
+          # changelog.md. Falls back to a generic message if missing.
+          NOTES_FILE=$(mktemp)
+          python3 <<'PY' > "$NOTES_FILE"
+          import os, re, sys, pathlib
+          version = os.environ["VERSION"]
+          text = pathlib.Path("changelog.md").read_text()
+          pattern = re.compile(
+              r"^\*\*" + re.escape(version) + r"\*\*\s*\n(.*?)(?=^\*\*\d|\Z)",
+              re.DOTALL | re.MULTILINE,
+          )
+          m = pattern.search(text)
+          if m:
+              print(m.group(1).strip())
+          else:
+              print(f"Release {version}. See changelog.md for details.")
+          PY
+          echo "notes_file=${NOTES_FILE}" >> "$GITHUB_OUTPUT"
+          echo "----- release notes preview -----"
+          cat "$NOTES_FILE"
+          echo "---------------------------------"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLUGIN_ID: ${{ steps.meta.outputs.plugin_id }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          NOTES_FILE: ${{ steps.notes.outputs.notes_file }}
+        run: |
+          set -euo pipefail
+          ASSET="${PLUGIN_ID}-${VERSION}.zip"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG already exists; uploading asset (clobber)."
+            gh release upload "$TAG" "$ASSET" --clobber
+          else
+            gh release create "$TAG" "$ASSET" \
+              --title "$TAG" \
+              --notes-file "$NOTES_FILE"
+          fi

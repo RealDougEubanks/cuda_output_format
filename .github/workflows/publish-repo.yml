@@ -1,0 +1,152 @@
+# Rebuilds the `repo` branch on every push to `main` so that
+# https://raw.githubusercontent.com/RealDougEubanks/cuda_output_format/repo/repo.json
+# always serves the current published version. Users add that URL to
+# Unmanic via Settings → Plugins → "Add new repo".
+#
+# The repo branch is an orphan branch containing only:
+#   repo.json
+#   repo.json.md5
+#   <plugin_id>/<plugin_id>-<version>.zip
+#   <plugin_id>/info.json
+#   <plugin_id>/description.md
+#   <plugin_id>/changelog.md
+name: Publish plugin repo index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "plugin.py"
+      - "info.json"
+      - "description.md"
+      - "changelog.md"
+      - "requirements.txt"
+      - "LICENSE"
+      - "README.md"
+      - "icon.png"
+      - "lib/**"
+      - ".github/workflows/publish-repo.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-repo
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          ref: main
+          path: src
+          fetch-depth: 1
+
+      - name: Read plugin metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          cd src
+          PLUGIN_ID=$(python3 -c "import json; print(json.load(open('info.json'))['id'])")
+          VERSION=$(python3 -c "import json; print(json.load(open('info.json'))['version'])")
+          echo "plugin_id=${PLUGIN_ID}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}"   >> "$GITHUB_OUTPUT"
+
+      - name: Check out repo branch (or initialise it)
+        run: |
+          set -euo pipefail
+          mkdir publish
+          cd publish
+          git init -q
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code origin repo > /dev/null 2>&1; then
+            git fetch --depth=1 origin repo
+            git checkout repo
+            # Wipe everything except .git so we publish a clean snapshot.
+            find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          else
+            git checkout --orphan repo
+            git rm -rf . 2>/dev/null || true
+          fi
+
+      - name: Build plugin zip + repo.json
+        env:
+          PLUGIN_ID: ${{ steps.meta.outputs.plugin_id }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          PLUGIN_DIR="publish/${PLUGIN_ID}"
+          mkdir -p "$PLUGIN_DIR"
+
+          # Files/dirs that ship inside the installable plugin zip.
+          ZIP_FILES=(plugin.py info.json description.md changelog.md requirements.txt LICENSE README.md icon.png)
+          ZIP_DIRS=(lib)
+
+          # Build zip from a staging dir so the archive paths are clean.
+          STAGE=$(mktemp -d)
+          for f in "${ZIP_FILES[@]}"; do
+            [ -f "src/$f" ] && cp "src/$f" "$STAGE/$f"
+          done
+          for d in "${ZIP_DIRS[@]}"; do
+            [ -d "src/$d" ] && cp -R "src/$d" "$STAGE/$d"
+          done
+          # Strip Python bytecode caches before archiving.
+          find "$STAGE" -type d -name '__pycache__' -prune -exec rm -rf {} +
+          (cd "$STAGE" && zip -qr "${PLUGIN_ID}-${VERSION}.zip" .)
+          mv "$STAGE/${PLUGIN_ID}-${VERSION}.zip" "$PLUGIN_DIR/"
+
+          # Loose metadata files alongside the zip (Unmanic convention).
+          for f in info.json description.md changelog.md; do
+            cp "src/$f" "$PLUGIN_DIR/$f"
+          done
+
+          # Build repo.json from a template, substituting plugin metadata.
+          python3 <<PY
+          import json, hashlib, pathlib
+          plugin_info = json.load(open("src/info.json"))
+          repo = {
+              "repo": {
+                  "id": "repository.realdougeubanks",
+                  "name": "Doug Eubanks' Unmanic Plugins",
+                  "icon": "",
+                  "repo_data_directory": "https://raw.githubusercontent.com/${{ github.repository }}/repo/",
+                  "repo_data_url": "https://raw.githubusercontent.com/${{ github.repository }}/repo/repo.json",
+              },
+              "plugins": [
+                  {
+                      "id": plugin_info["id"],
+                      "name": plugin_info["name"],
+                      "author": plugin_info["author"],
+                      "version": plugin_info["version"],
+                      "tags": plugin_info.get("tags", ""),
+                      "description": plugin_info.get("description", ""),
+                      "icon": plugin_info.get("icon", ""),
+                      "compatibility": plugin_info.get("compatibility", []),
+                      "platform": plugin_info.get("platform", ["all"]),
+                      "priorities": plugin_info.get("priorities", {}),
+                  }
+              ],
+          }
+          repo_json = json.dumps(repo, indent=4) + "\n"
+          pathlib.Path("publish/repo.json").write_text(repo_json)
+          pathlib.Path("publish/repo.json.md5").write_text(
+              hashlib.md5(repo_json.encode()).hexdigest() + "\n"
+          )
+          PY
+
+      - name: Commit & push if changed
+        run: |
+          set -euo pipefail
+          cd publish
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to publish."
+            exit 0
+          fi
+          git commit -m "Publish ${{ steps.meta.outputs.plugin_id }} ${{ steps.meta.outputs.version }}"
+          git push origin repo
