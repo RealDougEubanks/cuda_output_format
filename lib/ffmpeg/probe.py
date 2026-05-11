@@ -51,15 +51,26 @@ def ffprobe_cmd(params):
     """
     command = ["ffprobe"] + params
 
+    # SECURITY / availability: cap ffprobe at 60s so a hung NFS mount, a
+    # malicious media file, or an unresponsive container doesn't pin an
+    # Unmanic worker thread indefinitely.
     pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    out, err = pipe.communicate()
+    try:
+        out, _err = pipe.communicate(timeout=60)
+    except subprocess.TimeoutExpired:
+        pipe.kill()
+        pipe.communicate()
+        raise FFProbeError(command, "ffprobe timed out after 60 seconds") from None
 
-    # Check for results
     try:
         raw_output = out.decode("utf-8")
     except Exception as e:
         raise FFProbeError(command, str(e))
-    if pipe.returncode == 1 or 'error' in raw_output:
+
+    # Trust the process return code for success/failure rather than a
+    # substring match against "error" — the latter false-positives on any
+    # file whose metadata legitimately contains that word.
+    if pipe.returncode != 0:
         raise FFProbeError(command, raw_output)
     if not raw_output:
         raise FFProbeError(command, 'No info found')

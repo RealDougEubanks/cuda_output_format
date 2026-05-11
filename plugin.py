@@ -170,11 +170,15 @@ def on_library_management_file_test(data):
     mapper.set_settings(settings)
     mapper.set_probe(probe)
 
+    # Log basenames at debug to limit accidental path disclosure if Unmanic's
+    # log files are shared. Full path is still available via Unmanic's own
+    # task records.
+    name = os.path.basename(abspath) if abspath else "<unknown>"
     if mapper.streams_need_processing():
         data["add_file_to_pending_tasks"] = True
-        logger.debug("File '%s' should be added to task list.", abspath)
+        logger.debug("File '%s' should be added to task list.", name)
     else:
-        logger.debug("File '%s' does not contain streams requiring processing.", abspath)
+        logger.debug("File '%s' does not contain streams requiring processing.", name)
 
     return data
 

@@ -24,6 +24,7 @@
 import datetime
 import math
 import re
+from fractions import Fraction
 from logging import Logger
 
 from .probe import Probe
@@ -56,16 +57,21 @@ class Parser(object):
         :param probe:
         :return:
         """
-        # Get FPS from file probe info
+        # Get FPS from file probe info.
+        #
+        # SECURITY: upstream uses `eval(...)` here, which evaluates arbitrary
+        # Python from media metadata supplied by ffprobe. A crafted media
+        # file with an `avg_frame_rate` like `__import__('os').system(...)`
+        # would run code inside the worker process. `Fraction` parses the
+        # "num/den" form natively, rejects anything else as ValueError, and
+        # never executes code.
         self.src_fps = None
         try:
             file_probe_streams = probe.get('streams', [])
-            self.src_fps = eval(file_probe_streams[0]['avg_frame_rate'])
-        except ZeroDivisionError:
-            # Warning, Cannot use input FPS
+            self.src_fps = float(Fraction(file_probe_streams[0]['avg_frame_rate']))
+        except (ZeroDivisionError, ValueError):
             self.logger.warning('Cannot use input FPS for FFmpeg conversion progress')
         except KeyError:
-            # Warning, Cannot use input FPS
             self.logger.warning('Cannot use input FPS for FFmpeg conversion progress - key not found in probe')
         if self.src_fps == 0:
             raise ValueError('Unexpected zero FPS')
