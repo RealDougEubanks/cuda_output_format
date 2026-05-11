@@ -18,7 +18,7 @@ class Settings(PluginSettings):
         "profile": "main",
         "max_muxing_queue_size": 2048,
         "main_options": "-threads 2\n",
-        "advanced_options": "-strict -2\n" "-max_muxing_queue_size 2048\n",
+        "advanced_options": "-strict -2\n-max_muxing_queue_size 2048\n",
         "custom_options": "-preset medium\n"
         "-profile:v main\n"
         "-pix_fmt p010le\n"
