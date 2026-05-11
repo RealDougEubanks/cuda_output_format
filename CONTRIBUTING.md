@@ -1,7 +1,18 @@
+<!--
+doc: CONTRIBUTING
+last-refreshed: 2026-05-11
+generated-by: doc-refresh skill
+-->
+
 # Contributing
 
 Thanks for taking a look! This is a small Unmanic plugin with a single
 hook, but contributions are welcome.
+
+> **SECURITY:** Never commit secrets, API keys, or credentials. None
+> are needed to develop or run this plugin. If you suspect a
+> vulnerability, follow [`SECURITY.md`](./SECURITY.md) — do **not**
+> open a public issue.
 
 ## Development setup
 
@@ -29,9 +40,26 @@ Python 3.10, 3.11, and 3.12 on every push and pull request.
 
 ## Workflow
 
-- Never commit directly to `main`. Branch as `feature/`, `fix/`, or
-  `hotfix/` and open a PR.
-- CI must pass before merge.
-- Document any non-obvious decision in `docs/assumptions.md`.
-- Bump `info.json` `version` and add a `changelog.md` entry on any
-  user-visible change.
+1. Branch from `main`:
+   ```bash
+   git checkout main && git pull
+   git checkout -b fix/short-description
+   ```
+2. Make your change.
+3. Run the local checks:
+   ```bash
+   ruff check . && ruff format --check . && pytest
+   ```
+4. If user-visible behavior changed, bump `version` in `info.json`
+   and add a `changelog.md` entry.
+5. If you made a non-obvious decision, record it in
+   `docs/assumptions.md`.
+6. Open a PR. CI must be green before merge.
+
+## PR Checklist
+
+- [ ] Tests pass locally (`pytest`)
+- [ ] `ruff check .` and `ruff format --check .` clean
+- [ ] No new secrets or credentials added
+- [ ] Docs updated if behavior changed
+- [ ] `info.json` version bumped + changelog entry, if user-visible

@@ -1,4 +1,16 @@
+<!--
+doc: README
+last-refreshed: 2026-05-11
+generated-by: doc-refresh skill
+-->
+
 # CUDA Output Format Injector — Unmanic Plugin
+
+> **SECURITY:** This plugin runs inside an Unmanic worker process and
+> only mutates an in-memory `data['exec_command']` list. It opens no
+> network connections, reads no user files, and handles no
+> credentials. Report any security concern privately — see
+> [`SECURITY.md`](./SECURITY.md).
 
 An [Unmanic](https://docs.unmanic.app) plugin that adds
 `-hwaccel_output_format cuda` to any ffmpeg command that already uses
@@ -71,6 +83,15 @@ page and extract it into
 After a test transcode, open the worker's command log in the Unmanic
 UI. You should see `-hwaccel_output_format cuda` in the assembled
 command. CPU usage per worker should drop noticeably during the encode.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| Plugin not visible in Unmanic UI | Folder name does not match `info.json` `id` | Rename the install folder to exactly `cuda_output_format`. |
+| `-hwaccel_output_format cuda` never appears in command | This plugin runs **before** the plugin that adds `-hwaccel cuda` | In **Library → Plugin Flow**, drag this plugin **below** *Transcode Video Files* (or whatever adds `-hwaccel cuda`). |
+| Flag appears but CPU is still high | NVDEC fallback to software decode (e.g., codec not supported by your GPU) | Check the worker log for `Cannot load nvcuvid` or similar — the source codec/profile may not have NVDEC support on your hardware. |
+| `Skipping injection: ...` warning in logs | `exec_command` was passed in an unexpected shape | Open an issue with the warning message and the relevant worker log lines. |
 
 ## Repository layout
 

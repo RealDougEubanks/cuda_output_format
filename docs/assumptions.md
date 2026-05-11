@@ -1,3 +1,9 @@
+<!--
+doc: ASSUMPTIONS
+last-refreshed: 2026-05-11
+generated-by: doc-refresh skill
+-->
+
 # Assumptions
 
 This file records non-obvious decisions made in the `cuda_output_format` plugin.

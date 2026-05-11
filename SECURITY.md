@@ -1,3 +1,9 @@
+<!--
+doc: SECURITY
+last-refreshed: 2026-05-11
+generated-by: doc-refresh skill
+-->
+
 # Security Policy
 
 ## Reporting a vulnerability
