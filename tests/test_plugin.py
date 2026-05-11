@@ -3,7 +3,6 @@ import logging
 import pytest
 
 from plugin import (
-    InvalidExecCommandError,
     _inject_output_format,
     on_worker_process,
 )
@@ -11,21 +10,48 @@ from plugin import (
 
 def test_inject_with_hwaccel_device_inserts_after_device_pair():
     cmd = [
-        "ffmpeg", "-hide_banner", "-hwaccel", "cuda", "-hwaccel_device", "0",
-        "-i", "input.mp4", "-c:v", "hevc_nvenc", "out.mkv",
+        "ffmpeg",
+        "-hide_banner",
+        "-hwaccel",
+        "cuda",
+        "-hwaccel_device",
+        "0",
+        "-i",
+        "input.mp4",
+        "-c:v",
+        "hevc_nvenc",
+        "out.mkv",
     ]
     assert _inject_output_format(cmd) == [
-        "ffmpeg", "-hide_banner", "-hwaccel", "cuda", "-hwaccel_device", "0",
-        "-hwaccel_output_format", "cuda",
-        "-i", "input.mp4", "-c:v", "hevc_nvenc", "out.mkv",
+        "ffmpeg",
+        "-hide_banner",
+        "-hwaccel",
+        "cuda",
+        "-hwaccel_device",
+        "0",
+        "-hwaccel_output_format",
+        "cuda",
+        "-i",
+        "input.mp4",
+        "-c:v",
+        "hevc_nvenc",
+        "out.mkv",
     ]
 
 
 def test_inject_without_hwaccel_device_inserts_after_hwaccel_value():
     cmd = ["ffmpeg", "-hwaccel", "cuda", "-i", "input.mp4", "-c:v", "hevc_nvenc", "out.mkv"]
     assert _inject_output_format(cmd) == [
-        "ffmpeg", "-hwaccel", "cuda", "-hwaccel_output_format", "cuda",
-        "-i", "input.mp4", "-c:v", "hevc_nvenc", "out.mkv",
+        "ffmpeg",
+        "-hwaccel",
+        "cuda",
+        "-hwaccel_output_format",
+        "cuda",
+        "-i",
+        "input.mp4",
+        "-c:v",
+        "hevc_nvenc",
+        "out.mkv",
     ]
 
 
@@ -41,8 +67,14 @@ def test_inject_skipped_when_hwaccel_value_is_not_cuda():
 
 def test_inject_is_idempotent_when_output_format_already_present():
     cmd = [
-        "ffmpeg", "-hwaccel", "cuda", "-hwaccel_output_format", "cuda",
-        "-i", "input.mp4", "out.mkv",
+        "ffmpeg",
+        "-hwaccel",
+        "cuda",
+        "-hwaccel_output_format",
+        "cuda",
+        "-i",
+        "input.mp4",
+        "out.mkv",
     ]
     assert _inject_output_format(cmd) == cmd
 
@@ -72,8 +104,14 @@ def test_on_worker_process_mutates_list_exec_command_in_place():
     result = on_worker_process(data)
     assert result is data
     assert data["exec_command"] == [
-        "ffmpeg", "-hwaccel", "cuda", "-hwaccel_output_format", "cuda",
-        "-i", "input.mp4", "out.mkv",
+        "ffmpeg",
+        "-hwaccel",
+        "cuda",
+        "-hwaccel_output_format",
+        "cuda",
+        "-i",
+        "input.mp4",
+        "out.mkv",
     ]
 
 
@@ -82,6 +120,14 @@ def test_on_worker_process_handles_string_exec_command():
     on_worker_process(data)
     assert data["exec_command"] == (
         "ffmpeg -hwaccel cuda -hwaccel_output_format cuda -i input.mp4 out.mkv"
+    )
+
+
+def test_on_worker_process_preserves_quoted_paths_with_whitespace():
+    data = {"exec_command": "ffmpeg -hwaccel cuda -i 'my movie.mp4' 'out file.mkv'"}
+    on_worker_process(data)
+    assert data["exec_command"] == (
+        "ffmpeg -hwaccel cuda -hwaccel_output_format cuda -i 'my movie.mp4' 'out file.mkv'"
     )
 
 

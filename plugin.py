@@ -13,7 +13,9 @@ This plugin only mutates `data['exec_command']` during the
 """
 
 import logging
-from typing import Any, List, Mapping, MutableMapping
+import shlex
+from collections.abc import MutableMapping
+from typing import Any
 
 logger = logging.getLogger("unmanic.plugin.cuda_output_format")
 
@@ -26,7 +28,7 @@ class InvalidExecCommandError(CudaOutputFormatError):
     """Raised when `data['exec_command']` is not a list[str] or str."""
 
 
-def _inject_output_format(args: List[str]) -> List[str]:
+def _inject_output_format(args: list[str]) -> list[str]:
     """Return a new list of ffmpeg args with `-hwaccel_output_format cuda`
     inserted at the correct position.
 
@@ -65,13 +67,21 @@ def _inject_output_format(args: List[str]) -> List[str]:
 
 def _validate_data(data: Any) -> MutableMapping[str, Any]:
     if not isinstance(data, MutableMapping):
-        raise InvalidExecCommandError(
-            f"data must be a mutable mapping, got {type(data).__name__}"
-        )
+        raise InvalidExecCommandError(f"data must be a mutable mapping, got {type(data).__name__}")
     return data
 
 
 def on_worker_process(data: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
+    """Unmanic `on_worker_process` hook.
+
+    Reads `data['exec_command']` (list[str] or str), and if it is an
+    ffmpeg invocation using `-hwaccel cuda` without `-hwaccel_output_format`,
+    mutates `data['exec_command']` to include `-hwaccel_output_format cuda`.
+
+    The same `data` mapping is returned so the hook can be chained. Any
+    unexpected error is logged and `data` is returned untouched — a plugin
+    failure must never break the worker's transcode.
+    """
     try:
         _validate_data(data)
         exec_command = data.get("exec_command")
@@ -79,10 +89,10 @@ def on_worker_process(data: MutableMapping[str, Any]) -> MutableMapping[str, Any
         if isinstance(exec_command, list):
             data["exec_command"] = _inject_output_format(exec_command)
         elif isinstance(exec_command, str):
-            tokens = exec_command.split()
+            tokens = shlex.split(exec_command)
             updated = _inject_output_format(tokens)
             if updated is not tokens:
-                data["exec_command"] = " ".join(updated)
+                data["exec_command"] = shlex.join(updated)
         elif exec_command is None:
             logger.debug("exec_command missing; nothing to inject")
         else:

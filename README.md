@@ -40,7 +40,7 @@ throughput. Adding the flag keeps the whole pipeline on the GPU.
 
 ```bash
 cd /config/.unmanic/userdata/plugins/
-git clone https://github.com/RealDougEubanks/unmanic.plugin.cuda_output_format.git cuda_output_format
+git clone https://github.com/RealDougEubanks/cuda_output_format.git cuda_output_format
 ```
 
 The destination folder name **must** be `cuda_output_format` — it has
@@ -61,7 +61,7 @@ Then in the Unmanic web UI:
 ### Option 2 — Download a zip
 
 Grab the latest source zip from the
-[Releases](https://github.com/RealDougEubanks/unmanic.plugin.cuda_output_format/releases)
+[Releases](https://github.com/RealDougEubanks/cuda_output_format/releases)
 page and extract it into
 `/config/.unmanic/userdata/plugins/cuda_output_format/` so that
 `plugin.py` and `info.json` sit at the top of that folder.
@@ -76,27 +76,39 @@ command. CPU usage per worker should drop noticeably during the encode.
 
 ```
 .
-├── plugin.py        # the hook implementation + self-tests
-├── info.json        # Unmanic plugin manifest
-├── description.md   # long-form description shown in the Unmanic UI
-├── changelog.md     # version history
-├── requirements.txt # empty — stdlib only
-├── README.md        # this file
-└── LICENSE          # MIT
+├── plugin.py             # the hook implementation
+├── info.json             # Unmanic plugin manifest
+├── description.md        # long-form description shown in the Unmanic UI
+├── changelog.md          # version history
+├── requirements.txt      # empty — runtime uses stdlib only
+├── requirements-dev.txt  # pytest + ruff for local development
+├── pyproject.toml        # ruff + pytest config
+├── tests/                # pytest suite
+├── docs/                  # assumptions and design notes
+├── CONTRIBUTING.md       # development workflow
+├── README.md             # this file
+└── LICENSE               # MIT
 ```
 
-`plugin.py` has a small self-test block; you can run it directly:
+## Development
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the dev workflow. In short:
 
 ```bash
-python3 plugin.py
-# All assertions passed.
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+pytest
 ```
 
 ## Compatibility
 
-Tested against Unmanic plugin compatibility levels `1` and `2`. The
-plugin makes no assumptions about which encoder/decoder plugin
-assembled the command — it only inspects and edits `data['exec_command']`.
+Declares compatibility with Unmanic plugin API levels `1` and `2`
+(see `info.json`). The plugin makes no assumptions about which
+encoder/decoder plugin assembled the command — it only inspects and
+edits `data['exec_command']`. Compatibility is verified manually
+against the current Unmanic release; the automated CI runs the unit
+tests under Python 3.10, 3.11, and 3.12 but does not exercise the
+Unmanic runtime.
 
 ## License
 

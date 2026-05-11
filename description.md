@@ -23,8 +23,10 @@ throughput goes up.
   immediately after the `-hwaccel_device` value (or after `-hwaccel
   cuda` if no device is set), keeping the flag before `-i <input>`.
 * Idempotent — running twice produces the same command.
-* Defensive — if `exec_command` is unexpected or anything raises,
-  the original command is returned untouched.
+* Defensive — if `exec_command` is missing, malformed, or any
+  unexpected error occurs, the plugin logs a warning under
+  `unmanic.plugin.cuda_output_format` and returns the original
+  command untouched. A plugin failure must never break a transcode.
 
 ### Ordering
 
