@@ -1,0 +1,160 @@
+# Weekly security scan.
+#
+# Runs pip-audit (dependency CVEs) and bandit (Python SAST) on a
+# schedule. For every High or Critical finding it opens (or updates)
+# a tracking issue tagged `security`. Can also be triggered manually
+# via the "Run workflow" button.
+name: Security scan
+
+on:
+  schedule:
+    # Mondays at 13:00 UTC (09:00 ET).
+    - cron: "0 13 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.1.1
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run pip-audit (dependency CVEs)
+        id: pip_audit
+        continue-on-error: true
+        run: |
+          pip-audit -r requirements-dev.txt -f json -o pip-audit.json || true
+          test -s pip-audit.json || echo '{"dependencies": []}' > pip-audit.json
+
+      - name: Run bandit (Python SAST)
+        id: bandit
+        continue-on-error: true
+        run: |
+          # Scan source only; skip tests and the local virtualenv.
+          bandit -r . -x tests,.venv -f json -o bandit.json || true
+          test -s bandit.json || echo '{"results": []}' > bandit.json
+
+      - name: Upload scan artifacts
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45581b # v4.6.0
+        with:
+          name: security-scan-results
+          path: |
+            pip-audit.json
+            bandit.json
+          retention-days: 30
+
+      - name: Open issue for high/critical findings
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+
+            const pipAudit = JSON.parse(fs.readFileSync('pip-audit.json', 'utf8'));
+            const bandit = JSON.parse(fs.readFileSync('bandit.json', 'utf8'));
+
+            // --- Collect high/critical pip-audit findings ----------------
+            const depFindings = [];
+            for (const dep of pipAudit.dependencies || []) {
+              for (const vuln of dep.vulns || []) {
+                // pip-audit doesn't always emit severity; treat any vuln
+                // with a fix as elevated, and rely on CVSS when present.
+                const sev = (vuln.severity || '').toUpperCase();
+                const isHigh = sev === 'HIGH' || sev === 'CRITICAL' || sev === '';
+                if (isHigh) {
+                  depFindings.push({
+                    pkg: dep.name,
+                    version: dep.version,
+                    id: vuln.id,
+                    fix: (vuln.fix_versions || []).join(', ') || 'none',
+                    desc: (vuln.description || '').slice(0, 400),
+                    severity: sev || 'UNSPECIFIED',
+                  });
+                }
+              }
+            }
+
+            // --- Collect high/critical bandit findings -------------------
+            const sastFindings = (bandit.results || []).filter(r => {
+              const sev = (r.issue_severity || '').toUpperCase();
+              return sev === 'HIGH' || sev === 'CRITICAL';
+            });
+
+            if (depFindings.length === 0 && sastFindings.length === 0) {
+              core.info('No high/critical findings.');
+              return;
+            }
+
+            // --- Build issue body ----------------------------------------
+            const today = new Date().toISOString().slice(0, 10);
+            const title = `Weekly security scan: high/critical findings (${today})`;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            let body = `Automated weekly security scan found high/critical findings.\n\n`;
+            body += `**Workflow run:** ${runUrl}\n\n`;
+
+            if (depFindings.length) {
+              body += `## Dependency vulnerabilities (pip-audit)\n\n`;
+              body += `| Package | Version | Advisory | Severity | Fix versions |\n`;
+              body += `|---------|---------|----------|----------|--------------|\n`;
+              for (const f of depFindings) {
+                body += `| ${f.pkg} | ${f.version} | ${f.id} | ${f.severity} | ${f.fix} |\n`;
+              }
+              body += `\n`;
+            }
+
+            if (sastFindings.length) {
+              body += `## Code findings (bandit)\n\n`;
+              for (const r of sastFindings) {
+                body += `- **${r.issue_severity}** \`${r.test_id}\` — ${r.issue_text}\n`;
+                body += `  - \`${r.filename}:${r.line_number}\`\n`;
+              }
+              body += `\n`;
+            }
+
+            body += `_Full JSON output is attached to the workflow run as the \`security-scan-results\` artifact._\n`;
+
+            // --- Reuse an open issue with the same scan signature ---------
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security,automated',
+              per_page: 50,
+            });
+
+            const reused = existing.find(i => i.title.startsWith('Weekly security scan:'));
+            if (reused) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: reused.number,
+                body,
+              });
+              core.info(`Appended findings to existing issue #${reused.number}.`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['security', 'automated'],
+              });
+              core.info(`Opened issue #${created.data.number}.`);
+            }
+
+            core.setFailed(
+              `Security scan found ${depFindings.length} dependency and ` +
+              `${sastFindings.length} code findings at high/critical severity.`
+            );
