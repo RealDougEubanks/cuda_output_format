@@ -50,7 +50,7 @@ A PR submitting this change to upstream is welcome — when/if upstream merges i
 1. **Settings → Plugins → Repos → +** (Add a new repository).
 2. Paste this URL:
    ```
-   https://raw.githubusercontent.com/RealDougEubanks/cuda_output_format/repo/repo.json
+   https://raw.githubusercontent.com/RealDougEubanks/unmanic.plugin.encoder_video_hevc_nvenc_gpu/repo/repo.json
    ```
 3. **Settings → Plugins** — *Video Encoder H265/HEVC - hevc_nvenc (GPU Pipeline)* will appear in the list. Click **Install**.
 4. Add it to your library's **Plugin Flow** (replace or sit alongside the upstream encoder).
@@ -61,7 +61,7 @@ The `repo` branch is rebuilt automatically by GitHub Actions on every push to `m
 
 ```bash
 cd /config/.unmanic/userdata/plugins/
-git clone https://github.com/RealDougEubanks/cuda_output_format.git encoder_video_hevc_nvenc_gpu
+git clone https://github.com/RealDougEubanks/unmanic.plugin.encoder_video_hevc_nvenc_gpu.git encoder_video_hevc_nvenc_gpu
 ```
 
 The destination folder name **must** be `encoder_video_hevc_nvenc_gpu` to match the plugin id in `info.json`.
@@ -70,7 +70,7 @@ Then in the Unmanic UI: **Settings → Plugins → Local** → find the plugin �
 
 ### Option 3 — Download a zip
 
-Grab the latest `encoder_video_hevc_nvenc_gpu-X.Y.Z.zip` from the [Releases](https://github.com/RealDougEubanks/cuda_output_format/releases) page and extract it into `/config/.unmanic/userdata/plugins/encoder_video_hevc_nvenc_gpu/` so that `plugin.py` and `info.json` sit at the top of that folder.
+Grab the latest `encoder_video_hevc_nvenc_gpu-X.Y.Z.zip` from the [Releases](https://github.com/RealDougEubanks/unmanic.plugin.encoder_video_hevc_nvenc_gpu/releases) page and extract it into `/config/.unmanic/userdata/plugins/encoder_video_hevc_nvenc_gpu/` so that `plugin.py` and `info.json` sit at the top of that folder.
 
 ## Configure
 
@@ -143,7 +143,7 @@ CI runs `ruff check`, `ruff format --check`, `pytest`, and `pip-audit` on Python
 
 This repository is the complete corresponding source for the
 installable plugin zip, per [GPL-3.0 §6](https://www.gnu.org/licenses/gpl-3.0.html#section6).
-Each release on the [Releases](https://github.com/RealDougEubanks/cuda_output_format/releases)
+Each release on the [Releases](https://github.com/RealDougEubanks/unmanic.plugin.encoder_video_hevc_nvenc_gpu/releases)
 page mirrors this repository's contents at the matching `vX.Y.Z` tag.
 
 ## License & Credits

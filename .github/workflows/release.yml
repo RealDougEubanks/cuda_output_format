@@ -6,7 +6,7 @@
 #   2. Merge to main.
 #   3. `git tag v0.2.0 && git push origin v0.2.0`
 #   4. This workflow creates the release at github.com/.../releases
-#      with `cuda_output_format-0.2.0.zip` as an asset.
+#      with `encoder_video_hevc_nvenc_gpu-1.1.0.zip` as an asset.
 #
 # The publish-repo workflow handles Unmanic-side distribution from
 # the `repo` branch; this one is for users who want a direct zip

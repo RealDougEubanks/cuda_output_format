@@ -30,6 +30,7 @@ Copyright:
 
 import logging
 import os
+from typing import Any
 
 from encoder_video_hevc_nvenc_gpu.lib.ffmpeg import Parser, Probe, StreamMapper
 from encoder_video_hevc_nvenc_gpu.settings import Settings
@@ -49,9 +50,12 @@ class PluginStreamMapper(StreamMapper):
 
     def __init__(self):
         super().__init__(logger, ["video"])
-        self.settings = None
+        # Typed as `Any` because the Settings instance is injected via
+        # `set_settings` after construction (mirroring the upstream pattern).
+        # All methods that touch `self.settings` assume it's been set.
+        self.settings: Any = None
 
-    def set_settings(self, settings):
+    def set_settings(self, settings: Settings) -> None:
         self.settings = settings
 
     def test_stream_needs_processing(self, stream_info: dict):

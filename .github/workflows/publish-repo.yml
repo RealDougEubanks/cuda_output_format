@@ -1,5 +1,5 @@
 # Rebuilds the `repo` branch on every push to `main` so that
-# https://raw.githubusercontent.com/RealDougEubanks/cuda_output_format/repo/repo.json
+# https://raw.githubusercontent.com/RealDougEubanks/unmanic.plugin.encoder_video_hevc_nvenc_gpu/repo/repo.json
 # always serves the current published version. Users add that URL to
 # Unmanic via Settings → Plugins → "Add new repo".
 #

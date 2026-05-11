@@ -16,5 +16,31 @@ ignore = []
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+addopts = "-ra --cov --cov-report=term-missing --cov-fail-under=85"
 pythonpath = ["."]
+
+[tool.coverage.run]
+branch = true
+source = ["."]
+omit = [
+    "tests/*",
+    "lib/*",
+    ".venv/*",
+]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["plugin.py", "settings.py"]
+# Lenient defaults — the codebase has partial type hints; we enforce that
+# whatever IS annotated is internally consistent without requiring full
+# annotation everywhere.
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = "encoder_video_hevc_nvenc_gpu.lib.ffmpeg.*"
+ignore_errors = true
