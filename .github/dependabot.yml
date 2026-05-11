@@ -1,0 +1,52 @@
+# Dependabot version updates.
+#
+# Security alerts/fixes are handled separately by Dependabot alerts +
+# security updates (enabled in Settings → Code security). This file
+# configures the *scheduled* version-update PR cadence.
+#
+# Grouping is on so we get one PR per ecosystem per week instead of
+# one PR per dependency. Cuts review burden dramatically on a tiny
+# repo with mostly transitive deps.
+version: 2
+updates:
+  # Python dev dependencies (pytest, ruff, mypy, pip-audit, bandit,
+  # pytest-cov, plus their transitive deps in requirements-dev.lock).
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "14:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "deps"
+      include: scope
+    groups:
+      python-dev-deps:
+        patterns:
+          - "*"
+
+  # GitHub Actions used by our workflows. All actions are SHA-pinned;
+  # Dependabot will propose updates to newer SHAs with version comments.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "14:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "ci"
+      include: scope
+    groups:
+      github-actions:
+        patterns:
+          - "*"
