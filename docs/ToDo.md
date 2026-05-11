@@ -14,4 +14,6 @@ Tracked work items that aren't worth a Jira/Issue but shouldn't be lost.
 
 ## Distribution
 
-- **Submit upstream PR.** Open a PR against `Josh5/unmanic.plugin.encoder_video_hevc_nvenc` adding `-hwaccel_output_format cuda` behind a settings toggle. If merged, archive this fork in favor of upstream.
+- ~~**Submit upstream PR for the GPU-pipeline feature.** Open a PR against `Josh5/unmanic.plugin.encoder_video_hevc_nvenc` adding `-hwaccel_output_format cuda` behind a settings toggle.~~ — **Not actionable:** the upstream encoder repository is archived (read-only). This fork is the active line of development going forward.
+
+- **File hardening issue against `Josh5/unmanic.plugin.helpers.ffmpeg`.** That repo is still open and accepting issues. The `eval()` removal we shipped in v1.1.0 (replacement with `fractions.Fraction`) should be proposed upstream as a defense-in-depth fix so other plugins vendoring this helper benefit. Frame as hardening, not RCE — no working exploit was demonstrated; the issue is that `eval` on parsed data is the kind of code that becomes exploitable as soon as adjacent assumptions change.

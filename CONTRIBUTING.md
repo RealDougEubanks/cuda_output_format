@@ -6,10 +6,9 @@ generated-by: doc-refresh skill
 
 # Contributing
 
-Contributions welcome. This is a small fork; the upstream plugin
-([Josh5/unmanic.plugin.encoder_video_hevc_nvenc](https://github.com/Josh5/unmanic.plugin.encoder_video_hevc_nvenc))
-is the canonical project — material changes to encoder logic should be
-proposed there first when reasonable.
+Contributions welcome.
+
+The upstream encoder plugin ([Josh5/unmanic.plugin.encoder_video_hevc_nvenc](https://github.com/Josh5/unmanic.plugin.encoder_video_hevc_nvenc)) is **archived** (read-only), so this fork is the active line of development. The vendored `lib/ffmpeg/` helpers module ([Josh5/unmanic.plugin.helpers.ffmpeg](https://github.com/Josh5/unmanic.plugin.helpers.ffmpeg)) is still open; hardening fixes there should still be proposed upstream as well as patched here.
 
 > **SECURITY:** Never commit secrets, API keys, or credentials. None
 > are required to develop or run this plugin. If you suspect a
@@ -43,20 +42,28 @@ pip-compile --allow-unsafe --generate-hashes --output-file=requirements-dev.lock
 pytest
 ```
 
-Tests cover the vendored `lib/ffmpeg/stream_mapper.py` helpers and the
-NVDEC argument-building logic in `plugin.py`. Unmanic's plugin runtime
-is mocked at the test boundary; the suite does not require a live
-Unmanic install.
+39 tests cover the NVDEC argument-building logic, output-container
+remux logic, the advanced/simple option branches, stream-mapping
+codec gating, both Unmanic hook entry points, the `Settings` form
+visibility toggles, and the security-critical `eval` removal in
+`lib/ffmpeg/parser.py`. Unmanic's plugin runtime is mocked at the
+test boundary via `tests/conftest.py`; the suite does not require a
+live Unmanic install. Coverage gate: ≥ 85% (currently 93%).
 
-## Linting and formatting
+## Linting, formatting, and type checking
 
 ```bash
 ruff check .
 ruff format .
+mypy
 ```
 
-CI runs `ruff check`, `ruff format --check`, `pytest`, and `pip-audit`
-on every push and pull request, against Python 3.10, 3.11, and 3.12.
+CI runs `ruff check`, `ruff format --check`, `mypy`, `pytest` (with
+coverage), and `pip-audit --strict` on every push and pull request,
+against Python 3.10, 3.11, and 3.12. CodeQL Python data-flow
+analysis runs on push, PR, and weekly. A separate weekly
+`security-scan` workflow runs `pip-audit` + `bandit` and
+auto-creates issues for high/critical findings.
 
 ## Workflow
 
@@ -68,7 +75,7 @@ on every push and pull request, against Python 3.10, 3.11, and 3.12.
 2. Make your change.
 3. Run the local checks:
    ```bash
-   ruff check . && ruff format --check . && pytest
+   ruff check . && ruff format --check . && mypy && pytest
    ```
 4. If user-visible behavior changed, bump `version` in `info.json`
    and add a `changelog.md` entry.
@@ -78,8 +85,9 @@ on every push and pull request, against Python 3.10, 3.11, and 3.12.
 
 ## PR Checklist
 
-- [ ] Tests pass locally (`pytest`)
+- [ ] Tests pass locally (`pytest`) — coverage stays ≥ 85%
 - [ ] `ruff check .` and `ruff format --check .` clean
+- [ ] `mypy` clean
 - [ ] `pip-audit -r requirements-dev.txt --strict` clean
 - [ ] No new secrets or credentials added
 - [ ] Docs updated if behavior changed

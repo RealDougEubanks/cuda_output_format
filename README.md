@@ -12,9 +12,9 @@ This Unmanic plugin transcodes video streams to H265/HEVC using the `hevc_nvenc`
 
 ## Why does this fork exist?
 
-The upstream plugin doesn't add `-hwaccel_output_format cuda`, so each decoded frame round-trips from GPU to system RAM and back, burning roughly one CPU core per worker. [Upstream issue #1](https://github.com/Josh5/unmanic.plugin.encoder_video_hevc_nvenc/issues/1) has tracked related ordering problems since October 2024 without a maintainer response, so this fork ships the fix in the meantime.
+The upstream plugin doesn't add `-hwaccel_output_format cuda`, so each decoded frame round-trips from GPU to system RAM and back, burning roughly one CPU core per worker. [Upstream issue #1](https://github.com/Josh5/unmanic.plugin.encoder_video_hevc_nvenc/issues/1) tracked related problems from October 2024 without a maintainer response, and the upstream encoder repository has since been **archived** (read-only). This fork carries the patch forward.
 
-**Relationship to upstream:** if Josh merges the equivalent change upstream (a PR is welcome — see [docs/ToDo.md](./docs/ToDo.md)), this fork will be archived in favor of the canonical plugin. We're not competing; we're patching forward until the original moves.
+**Relationship to upstream:** the upstream encoder repository is archived, so no PR back is possible there. The vendored `lib/ffmpeg/` helpers module ([Josh5/unmanic.plugin.helpers.ffmpeg](https://github.com/Josh5/unmanic.plugin.helpers.ffmpeg)) is still open, and we plan to file a hardening issue there — see [docs/ToDo.md](./docs/ToDo.md). This fork will continue to be maintained as the canonical source for users who want the GPU-pipeline behavior.
 
 > **SECURITY:** This plugin runs inside an Unmanic worker process. It probes media files with `ffprobe` and constructs an ffmpeg argument list. It does not open network connections, write secrets to disk, or handle credentials. Report any concern privately — see [`SECURITY.md`](./SECURITY.md).
 
@@ -40,8 +40,6 @@ This fork adds:
 ```
 
 The flag is gated on a new toggle (**"Keep decoded frames in GPU memory"**) that defaults to **on**, but you can disable it without losing NVDEC decoding.
-
-A PR submitting this change to upstream is welcome — when/if upstream merges it, this fork can be archived.
 
 ## Install
 
@@ -137,7 +135,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-CI runs `ruff check`, `ruff format --check`, `pytest`, and `pip-audit` on Python 3.10–3.12.
+CI runs `ruff check`, `ruff format --check`, `mypy`, `pytest` (with coverage gate at 85%), and `pip-audit` on Python 3.10–3.12. CodeQL Python data-flow analysis runs on push, PR, and weekly. Bandit + pip-audit additionally run as a weekly cron with auto-issue creation for high/critical findings.
 
 ## Source code
 
