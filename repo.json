@@ -1,0 +1,31 @@
+{
+    "repo": {
+        "id": "repository.realdougeubanks",
+        "name": "Doug Eubanks' Unmanic Plugins",
+        "icon": "",
+        "repo_data_directory": "https://raw.githubusercontent.com/RealDougEubanks/unmanic.plugin.encoder_video_hevc_nvenc_gpu/repo/",
+        "repo_data_url": "https://raw.githubusercontent.com/RealDougEubanks/unmanic.plugin.encoder_video_hevc_nvenc_gpu/repo/repo.json"
+    },
+    "plugins": [
+        {
+            "id": "encoder_video_hevc_nvenc_gpu",
+            "name": "Video Encoder H265/HEVC - hevc_nvenc (GPU Pipeline)",
+            "author": "Doug Eubanks (fork of Josh.5)",
+            "version": "1.1.0",
+            "tags": "video,encoder,ffmpeg,nvidia,nvenc,nvdec,gpu",
+            "description": "Ensure all video streams are encoded with H265/HEVC using the hevc_nvenc encoder. Fork of Josh5/encoder_video_hevc_nvenc that adds `-hwaccel_output_format cuda` when NVDEC HW decoding is enabled, keeping decoded frames in GPU memory for a full NVDEC \u2192 NVENC pipeline.",
+            "icon": "https://raw.githubusercontent.com/RealDougEubanks/unmanic.plugin.encoder_video_hevc_nvenc_gpu/v1.1.0/icon.png",
+            "compatibility": [
+                1,
+                2
+            ],
+            "platform": [
+                "all"
+            ],
+            "priorities": {
+                "on_library_management_file_test": 99,
+                "on_worker_process": 0
+            }
+        }
+    ]
+}
