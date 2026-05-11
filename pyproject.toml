@@ -12,6 +12,7 @@ ignore = []
 # Unmanic's PluginSettings expects a class-level `settings` dict; mirroring
 # that pattern is the documented plugin API, so RUF012 is suppressed here.
 "plugin.py" = ["RUF012"]
+"settings.py" = ["RUF012"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

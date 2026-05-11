@@ -24,6 +24,19 @@ source .venv/bin/activate
 pip install -r requirements-dev.txt
 ```
 
+For reproducible installs with verified hashes (release prep, supply-chain audits), use the lockfile instead:
+
+```bash
+pip install --require-hashes -r requirements-dev.lock
+```
+
+Regenerate the lockfile after changing `requirements-dev.txt`:
+
+```bash
+pip install pip-tools
+pip-compile --allow-unsafe --generate-hashes --output-file=requirements-dev.lock requirements-dev.txt
+```
+
 ## Running the test suite
 
 ```bash

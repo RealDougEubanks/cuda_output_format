@@ -32,191 +32,20 @@ import logging
 import os
 
 from encoder_video_hevc_nvenc_gpu.lib.ffmpeg import Parser, Probe, StreamMapper
-from unmanic.libs.unplugins.settings import PluginSettings
+from encoder_video_hevc_nvenc_gpu.settings import Settings
+
+__all__ = ["Settings", "on_library_management_file_test", "on_worker_process"]
 
 logger = logging.getLogger("Unmanic.Plugin.encoder_video_hevc_nvenc_gpu")
 
 
-class Settings(PluginSettings):
-    settings = {
-        "hw_decoding": False,
-        "hw_output_format_cuda": True,
-        "advanced": False,
-        "preset": "medium",
-        "profile": "main",
-        "max_muxing_queue_size": 2048,
-        "main_options": "-threads 2\n",
-        "advanced_options": "-strict -2\n" "-max_muxing_queue_size 2048\n",
-        "custom_options": "-preset medium\n"
-        "-profile:v main\n"
-        "-pix_fmt p010le\n"
-        "-rc:v vbr_hq\n"
-        "-qmin 0\n"
-        "-rc-lookahead 32\n"
-        "-spatial_aq:v 1\n"
-        "-aq-strength:v 8\n"
-        "-a53cc 0\n"
-        "-b:v:0 4M\n",
-        "keep_container": True,
-        "dest_container": "mkv",
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.form_settings = {
-            "advanced": {
-                "label": "Write your own FFmpeg params",
-            },
-            "hw_decoding": self.__set_hw_decoding_checkbox_form_settings(),
-            "hw_output_format_cuda": self.__set_hw_output_format_cuda_form_settings(),
-            "max_muxing_queue_size": self.__set_max_muxing_queue_size_form_settings(),
-            "preset": self.__set_preset_form_settings(),
-            "profile": self.__set_profile_form_settings(),
-            "main_options": self.__set_main_options_form_settings(),
-            "advanced_options": self.__set_advanced_options_form_settings(),
-            "custom_options": self.__set_custom_options_form_settings(),
-            "keep_container": {
-                "label": "Keep the same container",
-            },
-            "dest_container": self.__set_destination_container(),
-        }
-
-    def __set_hw_decoding_checkbox_form_settings(self):
-        return {
-            "label": "Enable NVDEC HW Accelerated Decoding?",
-            "input_type": "checkbox",
-        }
-
-    def __set_hw_output_format_cuda_form_settings(self):
-        values = {
-            "label": "Keep decoded frames in GPU memory (-hwaccel_output_format cuda)",
-            "input_type": "checkbox",
-        }
-        # Only meaningful when HW decoding is on.
-        if not self.get_setting("hw_decoding"):
-            values["display"] = "hidden"
-        return values
-
-    def __set_max_muxing_queue_size_form_settings(self):
-        values = {
-            "label": "Max input stream packet buffer",
-            "input_type": "slider",
-            "slider_options": {
-                "min": 1024,
-                "max": 10240,
-            },
-        }
-        if self.get_setting("advanced"):
-            values["display"] = "hidden"
-        return values
-
-    def __set_preset_form_settings(self):
-        values = {
-            "label": "NVENC Encoder Quality Preset",
-            "input_type": "select",
-            "select_options": [
-                {"value": "fast", "label": "Fast"},
-                {"value": "medium", "label": "Medium"},
-                {"value": "slow", "label": "Slow"},
-                {"value": "lossless", "label": "Lossless (slowest)"},
-            ],
-        }
-        if self.get_setting("advanced"):
-            values["display"] = "hidden"
-        return values
-
-    def __set_profile_form_settings(self):
-        values = {
-            "label": "Profile",
-            "input_type": "select",
-            "select_options": [
-                {"value": "main", "label": "Main"},
-                {"value": "main10", "label": "Main10"},
-                {"value": "rext", "label": "Range Extended"},
-            ],
-        }
-        if self.get_setting("advanced"):
-            values["display"] = "hidden"
-        return values
-
-    def __set_main_options_form_settings(self):
-        values = {
-            "label": "Write your own custom main options",
-            "input_type": "textarea",
-        }
-        if not self.get_setting("advanced"):
-            values["display"] = "hidden"
-        return values
-
-    def __set_advanced_options_form_settings(self):
-        values = {
-            "label": "Write your own custom advanced options",
-            "input_type": "textarea",
-        }
-        if not self.get_setting("advanced"):
-            values["display"] = "hidden"
-        return values
-
-    def __set_custom_options_form_settings(self):
-        values = {
-            "label": "Write your own custom video options",
-            "input_type": "textarea",
-        }
-        if not self.get_setting("advanced"):
-            values["display"] = "hidden"
-        return values
-
-    def __set_destination_container(self):
-        values = {
-            "label": "Set the output container",
-            "input_type": "select",
-            "select_options": [
-                {"value": "mkv", "label": ".mkv - Matroska"},
-                {"value": "avi", "label": ".avi - AVI (Audio Video Interleaved)"},
-                {"value": "mov", "label": ".mov - QuickTime / MOV"},
-                {"value": "mp4", "label": ".mp4 - MP4 (MPEG-4 Part 14)"},
-            ],
-        }
-        if self.get_setting("keep_container"):
-            values["display"] = "hidden"
-        return values
-
-
 class PluginStreamMapper(StreamMapper):
     image_video_codecs = [
-        "alias_pix",
-        "apng",
-        "brender_pix",
-        "dds",
-        "dpx",
-        "exr",
-        "fits",
-        "gif",
-        "mjpeg",
-        "mjpegb",
-        "pam",
-        "pbm",
-        "pcx",
-        "pfm",
-        "pgm",
-        "pgmyuv",
-        "pgx",
-        "photocd",
-        "pictor",
-        "pixlet",
-        "png",
-        "ppm",
-        "ptx",
-        "sgi",
-        "sunrast",
-        "tiff",
-        "vc1image",
-        "wmv3image",
-        "xbm",
-        "xface",
-        "xpm",
-        "xwd",
-    ]
+        "alias_pix", "apng", "brender_pix", "dds", "dpx", "exr", "fits", "gif",
+        "mjpeg", "mjpegb", "pam", "pbm", "pcx", "pfm", "pgm", "pgmyuv", "pgx",
+        "photocd", "pictor", "pixlet", "png", "ppm", "ptx", "sgi", "sunrast",
+        "tiff", "vc1image", "wmv3image", "xbm", "xface", "xpm", "xwd",
+    ]  # fmt: skip
 
     def __init__(self):
         super().__init__(logger, ["video"])
@@ -237,13 +66,10 @@ class PluginStreamMapper(StreamMapper):
             stream_encoding += self.settings.get_setting("custom_options").split()
         else:
             stream_encoding = [
-                f"-c:v:{stream_id}",
-                "hevc_nvenc",
-                f"-profile:v:{stream_id}",
-                self.settings.get_setting("profile"),
-                "-preset",
-                self.settings.get_setting("preset"),
-            ]
+                f"-c:v:{stream_id}", "hevc_nvenc",
+                f"-profile:v:{stream_id}", self.settings.get_setting("profile"),
+                "-preset", self.settings.get_setting("preset"),
+            ]  # fmt: skip
 
         return {
             "stream_mapping": ["-map", f"0:v:{stream_id}"],
@@ -262,8 +88,7 @@ class PluginStreamMapper(StreamMapper):
         if not self.settings.get_setting("hw_decoding"):
             return
 
-        # TODO: discover device id from a config option once Unmanic exposes
-        # GPU enumeration.
+        # Device id is hardcoded; see docs/ToDo.md for the planned config option.
         dev_id = "0"
         generic_kwargs = {
             "-hwaccel": "cuda",
@@ -278,6 +103,53 @@ def _build_settings(data):
     if data.get("library_id"):
         return Settings(library_id=data.get("library_id"))
     return Settings()
+
+
+def _apply_output_container(data, settings, mapper):
+    """Set the mapper's output file, optionally remuxing to a new container."""
+    if settings.get_setting("keep_container"):
+        mapper.set_output_file(data.get("file_out"))
+        return
+
+    container_extension = settings.get_setting("dest_container")
+    split_file_out = os.path.splitext(data.get("file_out"))
+    new_file_out = f"{split_file_out[0]}.{container_extension.lstrip('.')}"
+    mapper.set_output_file(new_file_out)
+    data["file_out"] = new_file_out
+
+
+def _apply_options(settings, mapper):
+    """Apply either the advanced (free-text) or simple (form-driven) options."""
+    if settings.get_setting("advanced"):
+        main_options = settings.get_setting("main_options").split()
+        if main_options:
+            mapper.main_options = main_options
+        advanced_options = settings.get_setting("advanced_options").split()
+        if advanced_options:
+            mapper.advanced_options = advanced_options
+        return
+
+    advanced_kwargs = {
+        "-max_muxing_queue_size": str(settings.get_setting("max_muxing_queue_size")),
+    }
+    # NVENC is GPU-bound; spawning more ffmpeg threads gains little and
+    # eats CPU headroom that parallel workers need. `slow`/`lossless`
+    # presets stay single-threaded to maximise per-frame quality.
+    if settings.get_setting("preset") in ("fast", "medium"):
+        advanced_kwargs["-threads"] = "2"
+    else:
+        advanced_kwargs["-threads"] = "1"
+    mapper.set_ffmpeg_advanced_options(**advanced_kwargs)
+
+
+def _finalize_command(data, mapper, probe):
+    """Materialise the assembled ffmpeg args and progress parser onto `data`."""
+    ffmpeg_args = mapper.get_ffmpeg_args()
+    data["exec_command"] = ["ffmpeg", *ffmpeg_args]
+
+    parser = Parser(logger)
+    parser.set_probe(probe)
+    data["command_progress_parser"] = parser.parse_progress
 
 
 def on_library_management_file_test(data):
@@ -324,41 +196,9 @@ def on_worker_process(data):
         return data
 
     mapper.set_input_file(abspath)
-
-    if settings.get_setting("keep_container"):
-        mapper.set_output_file(data.get("file_out"))
-    else:
-        container_extension = settings.get_setting("dest_container")
-        split_file_out = os.path.splitext(data.get("file_out"))
-        new_file_out = f"{split_file_out[0]}.{container_extension.lstrip('.')}"
-        mapper.set_output_file(new_file_out)
-        data["file_out"] = new_file_out
-
+    _apply_output_container(data, settings, mapper)
     mapper.generate_default_nvdec_args()
-
-    if settings.get_setting("advanced"):
-        main_options = settings.get_setting("main_options").split()
-        if main_options:
-            mapper.main_options = main_options
-        advanced_options = settings.get_setting("advanced_options").split()
-        if advanced_options:
-            mapper.advanced_options = advanced_options
-    else:
-        advanced_kwargs = {
-            "-max_muxing_queue_size": str(settings.get_setting("max_muxing_queue_size")),
-        }
-        if settings.get_setting("preset") in ("fast", "medium"):
-            advanced_kwargs["-threads"] = "4"
-        else:
-            advanced_kwargs["-threads"] = "1"
-        mapper.set_ffmpeg_advanced_options(**advanced_kwargs)
-
-    ffmpeg_args = mapper.get_ffmpeg_args()
-
-    data["exec_command"] = ["ffmpeg", *ffmpeg_args]
-
-    parser = Parser(logger)
-    parser.set_probe(probe)
-    data["command_progress_parser"] = parser.parse_progress
+    _apply_options(settings, mapper)
+    _finalize_command(data, mapper, probe)
 
     return data

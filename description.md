@@ -14,6 +14,8 @@ Check your GPU compatibility:
 #### <span style="color:blue">Enable NVDEC HW Accelerated Decoding?</span>
 Decode the video stream using hardware-accelerated decoding. This sets `-hwaccel cuda -hwaccel_device {device}` in the ffmpeg generic options. Required for the GPU pipeline.
 
+When this is enabled, the related **"Keep decoded frames in GPU memory"** toggle below (default **on**) keeps the whole pipeline on the GPU — that's the change this fork adds over upstream.
+
 For 10-bit encodes that fall outside NVDEC's supported profiles, leave this off.
 
 

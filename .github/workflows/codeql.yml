@@ -1,0 +1,33 @@
+# CodeQL static analysis for Python. Complements bandit/pip-audit with
+# data-flow analysis. Findings appear under the repo's Security tab.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 14 * * 1"  # Mondays 14:00 UTC, an hour after security-scan.
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@4e828ff8d448a8a6e532957b1811f387a63867e8 # v3.27.4
+        with:
+          languages: python
+          # Exclude vendored upstream code from scanning.
+          config: |
+            paths-ignore:
+              - lib/ffmpeg/**
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@4e828ff8d448a8a6e532957b1811f387a63867e8 # v3.27.4

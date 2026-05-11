@@ -5,7 +5,7 @@
         2
     ],
     "description": "Ensure all video streams are encoded with H265/HEVC using the hevc_nvenc encoder. Fork of Josh5/encoder_video_hevc_nvenc that adds `-hwaccel_output_format cuda` when NVDEC HW decoding is enabled, keeping decoded frames in GPU memory for a full NVDEC \u2192 NVENC pipeline.",
-    "icon": "https://raw.githubusercontent.com/RealDougEubanks/cuda_output_format/main/icon.png",
+    "icon": "https://raw.githubusercontent.com/RealDougEubanks/cuda_output_format/v1.1.0/icon.png",
     "id": "encoder_video_hevc_nvenc_gpu",
     "name": "Video Encoder H265/HEVC - hevc_nvenc (GPU Pipeline)",
     "platform": [
@@ -16,5 +16,5 @@
         "on_worker_process": 0
     },
     "tags": "video,encoder,ffmpeg,nvidia,nvenc,nvdec,gpu",
-    "version": "1.0.0"
+    "version": "1.1.0"
 }

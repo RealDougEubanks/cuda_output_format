@@ -1,4 +1,18 @@
 
+**1.1.0**
+
+- Default `preset` changed from `medium` → `fast`. NVENC's `fast`
+  preset is the documented recommended setting for transcoding
+  throughput; the quality delta versus `medium` is minor and the
+  throughput delta is large. Users wanting max quality can still
+  pick `slow` or `lossless` from the preset dropdown.
+- Default simple-mode thread count for `fast`/`medium` presets
+  changed from `4` → `2`. NVENC is GPU-bound; spawning four ffmpeg
+  threads gained little and ate CPU headroom that parallel workers
+  need. `slow`/`lossless` presets continue to run single-threaded.
+- No new settings; no schema changes. Existing installations pick up
+  the new defaults only for fields the user hasn't customised.
+
 **1.0.0**
 
 - Initial release of `encoder_video_hevc_nvenc_gpu` — a fork of
