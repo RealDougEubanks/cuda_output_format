@@ -1,0 +1,19 @@
+{
+    "id": "cuda_output_format",
+    "name": "CUDA Output Format Injector",
+    "author": "Doug Eubanks",
+    "version": "0.1.0",
+    "compatibility": [
+        1,
+        2
+    ],
+    "platform": [
+        "all"
+    ],
+    "tags": "video,nvidia,performance",
+    "description": "Injects `-hwaccel_output_format cuda` into ffmpeg commands that already use `-hwaccel cuda`, keeping decoded frames in GPU memory for NVENC. Must run AFTER any plugin (e.g. Transcode Video Files) that adds `-hwaccel cuda` to the command.",
+    "icon": "",
+    "priorities": {
+        "on_worker_process": 200
+    }
+}
