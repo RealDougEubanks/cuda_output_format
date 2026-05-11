@@ -38,6 +38,24 @@ ruff format .
 CI runs `ruff check`, `ruff format --check`, and `pytest` against
 Python 3.10, 3.11, and 3.12 on every push and pull request.
 
+## Releasing a new version
+
+1. Bump `version` in `info.json`.
+2. Add a `**X.Y.Z**` section at the top of `changelog.md`.
+3. Open a PR, get CI green, and merge to `main`.
+4. Tag the merge commit and push:
+   ```bash
+   git checkout main && git pull
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+5. Two workflows fire automatically:
+   - `release.yml` — builds the plugin zip, creates a GitHub
+     Release at `vX.Y.Z`, and attaches the zip as an asset.
+   - `publish-repo.yml` — rebuilds the `repo` branch so Unmanic
+     installs pick up the new version. (Triggered by the merge to
+     `main`, not the tag.)
+
 ## Workflow
 
 1. Branch from `main`:
