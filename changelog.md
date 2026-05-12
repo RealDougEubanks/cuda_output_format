@@ -1,4 +1,14 @@
 
+**1.1.1**
+
+- **Packaging fix:** the v1.1.0 release zip and the `repo` branch were
+  missing `settings.py`, which was split out of `plugin.py` during the
+  v1.1.0 refactor. Installs via the Unmanic repo URL or the v1.1.0 zip
+  loaded the plugin metadata (so it appeared in the library list) but
+  failed at runtime when importing `Settings`, leaving the plugin
+  unavailable in the Plugin Flow. Updated `release.yml` and
+  `publish-repo.yml` to include `settings.py` in the archive.
+
 **1.1.0**
 
 - **Hardening:** the vendored `lib/ffmpeg/parser.py` previously

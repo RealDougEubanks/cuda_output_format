@@ -56,7 +56,7 @@ jobs:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           set -euo pipefail
-          ZIP_FILES=(plugin.py info.json description.md changelog.md requirements.txt LICENSE README.md icon.png)
+          ZIP_FILES=(plugin.py settings.py info.json description.md changelog.md requirements.txt LICENSE README.md icon.png)
           ZIP_DIRS=(lib)
           STAGE=$(mktemp -d)
           for f in "${ZIP_FILES[@]}"; do

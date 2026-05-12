@@ -17,6 +17,7 @@ on:
     branches: [main]
     paths:
       - "plugin.py"
+      - "settings.py"
       - "info.json"
       - "description.md"
       - "changelog.md"
@@ -84,7 +85,7 @@ jobs:
           mkdir -p "$PLUGIN_DIR"
 
           # Files/dirs that ship inside the installable plugin zip.
-          ZIP_FILES=(plugin.py info.json description.md changelog.md requirements.txt LICENSE README.md icon.png)
+          ZIP_FILES=(plugin.py settings.py info.json description.md changelog.md requirements.txt LICENSE README.md icon.png)
           ZIP_DIRS=(lib)
 
           # Build zip from a staging dir so the archive paths are clean.
